@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package>
+  <name>stdr_lib</name>
+  <version>0.0.0</version>
+  <description>The stdr_lib package</description>
+
+  <maintainer email="brice.rebsamen@gmail.com">brice rebsamen</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <run_depend>roscpp</run_depend>
+
+</package>

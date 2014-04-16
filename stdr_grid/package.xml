@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>stdr_grid</name>
+  <version>0.0.0</version>
+  <description>2 different grids, templated. One is a fixed grid, the other
+  is a rolling grid: the data remains the same (in most cells) when the center
+  is translated.
+  </description>
+
+  <maintainer email="brice.rebsamen@gmail.com">Brice Rebsamen</maintainer>
+
+  <license>TODO</license>
+
+  <author email="brice.rebsamen@gmail.com">Brice Rebsamen</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>bag_of_tricks</build_depend>
+  <build_depend>timer</build_depend>
+  <run_depend>bag_of_tricks</run_depend>
+  <run_depend>timer</run_depend>
+</package>

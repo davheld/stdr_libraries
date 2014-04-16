@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+  <name>eigen_extensions</name>
+  <version>0.0.0</version>
+  <description>The eigen_extensions package</description>
+
+  <maintainer email="brice.rebsamen@gmail.com">Brice Rebsamen</maintainer>
+
+  <license>TODO</license>
+
+  <author email="teichman@cs.stanford.edu">Alex Teichman</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>boost</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>bag_of_tricks</build_depend>
+
+  <run_depend>boost</run_depend>
+  <run_depend>eigen</run_depend>
+  <run_depend>bag_of_tricks</run_depend>
+  
+</package>

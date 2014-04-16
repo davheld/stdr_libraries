@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package>
+  <name>serializable</name>
+  <version>0.0.0</version>
+  <description>Provides an abstract class to represent objects that can be
+    serialized and deserialized.
+  </description>
+
+  <maintainer email="brice.rebsamen@gmail.com">Brice Rebsamen</maintainer>
+
+  <license>TODO</license>
+
+  <author email="teichman@cs.stanford.edu">Alex Teichman</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>boost</build_depend>
+  <build_depend>yaml_cpp</build_depend>
+  <build_depend>agent</build_depend>
+
+  <run_depend>boost</run_depend>
+  <run_depend>yaml_cpp</run_depend>
+  <run_depend>agent</run_depend>
+</package>

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <name>bag_of_tricks</name>
+  <version>0.0.0</version>
+  <description>A library with a bunch of useful stuffs. In particular:
+    - high_res_timer.h: easy to use timers to time block execution time.
+    - lockable.h: easy to use mutexes
+  </description>
+
+  <maintainer email="brice.rebsamen@gmail.com">Brice Rebsamen</maintainer>
+
+  <license>TODO</license>
+
+  <author email="teichman@cs.stanford.edu">Alex Teichman</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>boost</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>opencv2</build_depend>
+  <build_depend>serializable</build_depend>
+  <build_depend>timer</build_depend>
+
+  <run_depend>boost</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>opencv2</run_depend>
+  <run_depend>serializable</run_depend>
+  <run_depend>timer</run_depend>
+</package>
