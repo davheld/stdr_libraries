@@ -31,3 +31,7 @@ target_link_libraries(test_floor_time ${catkin_LIBRARIES})
 if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(test_grid src/test_grid.cpp)
 endif(CATKIN_ENABLE_TESTING)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+

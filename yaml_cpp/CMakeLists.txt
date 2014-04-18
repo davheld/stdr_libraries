@@ -77,3 +77,12 @@ add_library(yaml_cpp
   include/yaml-cpp/exceptions.h
   include/yaml-cpp/stlemitter.h
 )
+
+install(TARGETS yaml_cpp
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
+
+install(DIRECTORY include/yaml-cpp/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/yaml-cpp/)
+
