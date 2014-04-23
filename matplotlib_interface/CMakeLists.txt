@@ -23,8 +23,11 @@ add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${EIGEN_LIBRARIES} ${PYTHON_LIBRARIES})
 
-add_executable(example src/example.cpp)
-target_link_libraries(example ${PROJECT_NAME})
+add_executable(matplotlib_interface_example src/example.cpp)
+target_link_libraries(matplotlib_interface_example ${PROJECT_NAME})
+set_target_properties(matplotlib_interface_example
+                      PROPERTIES OUTPUT_NAME example
+                      PREFIX "")
 
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
