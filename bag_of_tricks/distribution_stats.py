@@ -7,11 +7,11 @@ import fileinput
 import argparse
 import numpy as np
 
-# the data we are going to work on
-data = {}
-outputfile = None
 
-description = '''Extracts data from FILES, compiles some stats, optionally displays an 
+#-----------------------------------------------------------------------------
+# Argument parsing: help message
+
+helpmsg = '''Extracts data from FILES, compiles some stats, optionally displays an 
 histogram.
 
 In autonomous mode, each line that matches the following pattern:
@@ -49,42 +49,96 @@ distribution_stats -a
   appeared 2 times with a mean of 11
 '''
 
-parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
+#-----------------------------------------------------------------------------
+# Argument parsing
+
+parser = argparse.ArgumentParser(description=helpmsg, formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("-s", "--skip-first", dest="skip_first", action='store_true',
+                  help="skip the first value for each record (useful when there is a costly initialization)")
 parser.add_argument("--hist", dest="display_hist", action="store_true",
                   help="display an histogram of retrieved values")
-parser.add_argument("--bins", dest="num_hist_bins", default=10, type=int)
+parser.add_argument("--hist-bins", dest="num_hist_bins", default=10, type=int,
+                  help="number of bins for the histogram (defaults to 10)")
+parser.add_argument("--hist-bound-min", dest="hist_bound_min", default=-float("inf"), type=float,
+                  help="for the histogram, ignore values lower than MIN", metavar="MIN")
+parser.add_argument("--hist-bound-max", dest="hist_bound_max", default=float("inf"), type=float,
+                  help="for the histogram, ignore values greater than MAX", metavar="MAX")
 parser.add_argument("-o", "--ofile", dest="outputfilename",
-                  help="copy stdin to FILE", metavar="FILE")
-parser.add_argument("-a", "--auto", help="turn on the automatic mode", action='store_true')
-parser.add_argument('remainder', nargs=argparse.REMAINDER)
+                  help="if reading from stdin, copy stdin to FILE", metavar="FILE")
+parser.add_argument('pattern', nargs='?', help="the pattern to search for. If not given then report all variables found.", default=None)
+parser.add_argument('field', nargs='?', help="the field number where to get the value from. Defaults to 2.", default=None)
+parser.add_argument('files', nargs='*', help="the input files to read data from. Defaults to stdin.", default=None)
 args = parser.parse_args()
 
 
-if not args.auto:
-  if len(args.remainder)<2:
-    print 'Error: pattern and field number missing (non automatic mode)'
-    sys.exit(1)
-  pattern = args.remainder[0]
-  field = int(args.remainder[1])
-  infiles = args.remainder[2:]
-else:
-  infiles = args.remainder
+# Parse the positional arguments
+pattern = None
+field = None
+infiles = []
 
-
-if args.display_hist:
-  from matplotlib import pyplot as plt
+for a in [args.pattern, args.field]+[args.files]:
+  if a is None or len(a)==0:
+    continue
+  try:
+    v = int(a)
+    if field is not None:
+      sys.exit("bad argument: got " + a + " while I already have %d " % field + "as field value.")
+    field = v
+    continue
+  except:
+    pass
   
+  if os.path.isfile(a):
+    infiles.append(a)
+    continue
+  else:
+    if pattern is not None:
+      sys.exit("bad argument: got " + a + " that I interpret as a pattern, but I already have " 
+                + pattern + " as pattern, and I only handle a single pattern")
+    pattern = a
+    continue
+    
+  sys.exit("bad argument: " + a)
+
+auto_pattern = False
+if pattern is None:
+  auto_pattern = True
+if field is None and not auto_pattern:
+  print "You did not provide a field number, trying with 2"
+  field = 2
+  
+  
+#-----------------------------------------------------------------------------
+# global variables
 
 class DataInfo:
+  '''A class to hold records for a variable'''
   def __init__(self):
+    # the pattern (i.e. name) for this variable
     self.pattern = ''
+    # to display the stats for each variable in order they appeared
     self.i = 0
-    self.data = []
+    # the data itself
+    self.records = []
     
+# the data we are going to work on
+data = {}
+# the outputfile, if any
+outputfile = None
+# counter to record the order in which variables appear
 counter = 0
+
+
+
+#-----------------------------------------------------------------------------
+# Parse the input
 
 for line in fileinput.input(infiles):
   
+  # in case we are reading from stdin, we want to copy all the data to a log
+  # file so that it can be further analyzed later on.
+  # in case no outputfile was given as argument, we create a temp file
+  # (this has to be done after reading the first line)
   if fileinput.isstdin():
     if outputfile is None:
       if args.outputfilename is None:
@@ -92,10 +146,21 @@ for line in fileinput.input(infiles):
         outputfile = os.fdopen(fd, 'w')
       else:
         outputfile = open(args.outputfilename, 'w')
-    sys.stdout.write(line)
-    outputfile.write(line)
+
   
-  if not args.auto:
+  if args.skip_first and fileinput.isfirstline():
+    seen_count = {}
+  
+  # if we are reading from stdin, then copy to stdout and the outputfile
+  if fileinput.isstdin():
+    sys.stdout.write(line)
+    
+  # if we are logging to a file
+  if outputfile:
+    outputfile.write(line)
+
+  # search for the pattern and get the value
+  if not auto_pattern:
     if pattern not in line:
       continue
     key = pattern
@@ -109,58 +174,83 @@ for line in fileinput.input(infiles):
       val = float(tokens[1])
     except:
       continue
-  
+
+  # store in database
   if key not in data:
-    d = DataInfo()
-    d.i = counter
-    counter = counter + 1
-    d.data.append(val)
-    d.pattern = key
-    data[key] = d
-  else:
-    data[key].data.append(val)
+    if args.skip_first:
+      if key not in seen_count:
+        seen_count[key] = 1
+      else:
+        seen_count[key] += 1
+      if seen_count[key]<=1:
+        continue
+    
+    data[key] = DataInfo()
+    data[key].i = counter
+    counter += 1
+    data[key].pattern = key
+  data[key].records.append(val)
 
+#-----------------------------------------------------------------------------
+# Process the data
 
-D = sorted([d for d in data.values() if len(d.data)>1], key=lambda v: v.i)
-if len(D)==0:
+# get rid of variables with only one record
+data = [d for d in data.values() if len(d.records)>1]
+if len(data)==0:
   sys.exit(0)
 
-maxlen = 0
-for d in D:
+if args.skip_first:
+  for d in data:
+    d.records = d.records[1:]
+
+# sort in order of appearance
+data.sort(key=lambda d: d.i)
+
+
+#-----------------------------------------------------------------------------
+# report as a table
+
+# cleanup the patterns
+for d in data:
   if d.pattern.endswith(':'):
     d.pattern = d.pattern[:-1]
-  if len(d.pattern)>maxlen:
-    maxlen = len(d.pattern)
 
-
-def print_table(table):
-  col_width = [max(len(x) for x in col) for col in zip(*table)]
-  horline = '-' * (sum(col_width) + (len(col_width)-1)*3 + 4)
-  print horline
-  for i, line in enumerate(table):
-    print "| " + " | ".join("{:{}}".format(x, col_width[i])
-                                for i, x in enumerate(line)) + " |"
-    if i==0:
-      print horline
-  print horline
-
+# create the table: first row is the header
 table = [["pattern", "#", "mean", "std", "min", "max"]]
-for d in D:
-  a = np.asarray(d.data)
-  table.append([d.pattern, str(len(d.data))] + map(lambda v: "%.2f" % v, [np.average(a), np.std(a), np.min(a), np.max(a)]))
+for d in data:
+  a = np.asarray(d.records)
+  table.append([d.pattern, str(len(d.records))] + map(lambda v: "%.2f" % v, [np.average(a), np.std(a), np.min(a), np.max(a)]))
 
+# if we are logging to a file
 if outputfile:
   print ''
   print ''
-print_table(table)
+
+# print the table nicely
+col_widths = [max(len(x) for x in col) for col in zip(*table)]
+horline = '-' * (sum(col_widths) + (len(col_widths)-1)*3 + 4)
+print horline
+for i, line in enumerate(table):
+  valstrs = ["{:{}}".format(x, col_widths[c]) for c, x in enumerate(line)]
+  print "| " + " | ".join(valstrs) + " |"
+  if i==0:
+    print horline
+print horline
 
 
+# if we are logging to a file
 if outputfile:
   print ''
   print "stdin was saved to", args.outputfilename
 
+  
+#-----------------------------------------------------------------------------
+# histogram
+
 if args.display_hist:
-  for d in D:
+  from matplotlib import pyplot as plt
+  for d in data:
     plt.figure(d.pattern)
-    plt.hist(d.data, bins=args.num_hist_bins)
+    X = [x for x in d.records if x>args.hist_bound_min and x<args.hist_bound_max]
+    plt.hist(X, bins=args.num_hist_bins)
   plt.show()
