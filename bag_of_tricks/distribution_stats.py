@@ -37,7 +37,7 @@ distribution_stats pattern 2
 distribution_stats pattern 2 file1 file2
   will read data from file1 and file2
 
-distribution_stats -a
+distribution_stats
   will register a pattern for each line, matching patterns across repetitions and
   giving stats about the second field:
   e.g. for the following input:
@@ -76,28 +76,35 @@ pattern = None
 field = None
 infiles = []
 
-for a in [args.pattern, args.field]+[args.files]:
-  if a is None or len(a)==0:
-    continue
+all_pos_args = [args.pattern, args.field];
+if args.files is not None:
+  all_pos_args.extend(args.files)
+
+for a in all_pos_args:
   try:
-    v = int(a)
-    if field is not None:
-      sys.exit("bad argument: got " + a + " while I already have %d " % field + "as field value.")
-    field = v
-    continue
-  except:
-    pass
-  
-  if os.path.isfile(a):
-    infiles.append(a)
-    continue
-  else:
-    if pattern is not None:
-      sys.exit("bad argument: got " + a + " that I interpret as a pattern, but I already have " 
-                + pattern + " as pattern, and I only handle a single pattern")
-    pattern = a
-    continue
+    if a is None or len(a)==0:
+      continue
+    try:
+      v = int(a)
+      if field is not None:
+        sys.exit("bad argument: got " + a + " while I already have %d " % field + "as field value.")
+      field = v
+      continue
+    except:
+      pass
     
+    if os.path.isfile(a):
+      infiles.append(a)
+      continue
+    else:
+      if pattern is not None:
+        sys.exit("bad argument: got " + a + " that I interpret as a pattern, but I already have " 
+                  + pattern + " as pattern, and I only handle a single pattern")
+      pattern = a
+      continue
+  except:
+    print "Unexpected error while processing argument", a, ":", sys.exc_info()[0]
+    raise
   sys.exit("bad argument: " + a)
 
 auto_pattern = False
