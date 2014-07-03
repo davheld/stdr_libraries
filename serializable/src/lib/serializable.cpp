@@ -1,5 +1,5 @@
-#include <serializable/serializable.h>
 #include <boost/filesystem.hpp>
+#include <serializable/serializable.h>
 
 using namespace std;
 namespace bfs = boost::filesystem;
@@ -30,12 +30,23 @@ void Serializable::save(const std::string& path) const
 
   // -- Write to disk.
   ofstream f;
+  f.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   f.open(tmppath.c_str());
   if(!f.is_open()) {
     cerr << "Failed to open " << path << endl;
     assert(f.is_open());
   }
-  serialize(f);
+
+  try {
+    serialize(f);
+  }
+  catch(std::ios_base::failure& e) {
+    const bfs::space_info s = bfs::space(bfs::path(tmppath));
+    cerr <<"Serialize failed. The disk might be full (" <<s.available <<" available out of " <<s.capacity <<")." <<endl;
+    cerr.flush();
+    abort();
+  }
+
   f.close();
 
   // -- Move the temporary file to the intended destination.
