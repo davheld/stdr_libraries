@@ -109,4 +109,40 @@
 } while(0)
 
 
+namespace stdr {
+
+///@{
+/** These functions return a parameter from the ros parameter server.
+  *
+  * Compared to the GET_ROS_PARAM_XXX macros, these functions return a value
+  * (as opposed to set the value of an existing variable), which is useful
+  * when dealing with a const variable. On the other hand, the error reporting
+  * is less useful, as the ros console macros will report the error as coming
+  * from this file, instead of the place where it was called.
+  */
+
+/** Returns the value of the parameter. Crashes if it does not exist.
+  */
+template <typename T>
+T get_rosparam(const ros::NodeHandle& nh, const std::string& param)
+{
+  T param_val;
+  GET_ROS_PARAM_ABORT(nh, param, param_val);
+  return param_val;
+}
+
+/** Returns the value of the parameter if it exists, otherwise returns @param default_val.
+  */
+template <typename T>
+T get_rosparam(const ros::NodeHandle& nh, const std::string& param, const T& default_val)
+{
+  T param_val;
+  GET_ROS_PARAM_WARN(nh, param, param_val, default_val);
+  return param_val;
+}
+
+///@}
+
+} //namespace stdr
+
 #endif // ROSPARAM_HELPERS_H
