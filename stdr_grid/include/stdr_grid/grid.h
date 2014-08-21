@@ -53,21 +53,19 @@ namespace stdr
   *
   * Notes:
   * - the row and column numbering starts in the lower left corner
-  * - since coordinates are expressed as int16_t, the max value for the XY
-  *   coordinates is 32767/resolution.
   */
 
 template <typename T>
 class Grid
 {
 private:
-  double resolution_;              // map resolution in meters
-  int16_t rows_, cols_;            // size of grid
-  unsigned sz_;
-  int16_t map_r0_, map_c0_;        // grid coordinates of lower left corner of map
+  double resolution_;    // map resolution in meters
+  unsigned rows_, cols_; // size of grid
+  unsigned long sz_;     // total number of cells
+  double x0_, y0_;       // world coordinates of first cell (lower left)
 
-  T* cell_;                        // actual map data
-  T default_value_;                // default value for new cells
+  T* cell_;              // actual map data
+  T default_value_;      // default value for new cells
 
 public:
   typedef T CellType;
@@ -81,7 +79,7 @@ public:
     * \param[in] rows the number of rows
     * \param[in] cols the number of columns
     */
-  Grid(double resolution, int16_t rows, int16_t cols);
+  Grid(double resolution, unsigned rows, unsigned cols);
 
   /** \brief Constructs a grid with given resolution and dimensions.
     *
@@ -90,7 +88,7 @@ public:
     * \param[in] cols the number of columns
     * \param[in] default_value the default cell value to use
     */
-  Grid(double resolution, int16_t rows, int16_t cols, const T & default_value);
+  Grid(double resolution, unsigned rows, unsigned cols, const T & default_value);
 
   // copy constructor
   Grid(const Grid & other);
@@ -98,61 +96,62 @@ public:
   // assignment operator
   Grid & operator= (const Grid & other);
 
-  void setDimensions(double resolution, int16_t rows, int16_t cols);
+  void setDimensions(double resolution, unsigned rows, unsigned cols);
 
-  void setDimensions(double resolution, int16_t rows, int16_t cols, const T & default_value);
+  void setDimensions(double resolution, unsigned rows, unsigned cols, const T & default_value);
 
   ~Grid();
 
   inline double resolution() const { return resolution_; }
-  inline int16_t rows() const { return rows_; }
-  inline int16_t cols() const { return cols_; }
+  inline unsigned rows() const { return rows_; }
+  inline unsigned cols() const { return cols_; }
 
-  /// Returns a pointer to the cell at world coordinates (x,y), NULL if (x,y)
-  /// falls outside of the grid.
-  template <class CT>
-  T* getXY(CT x, CT y) const;
 
-  /// Returns a pointer to the cell at global grid coordinates (number of rows
-  /// and columns from the origin of the world coordinates, NULL if (r,c)
-  /// falls outside of the grid.
-  T* getRCGlobal(int16_t r, int16_t c) const;
+  /// Returns a pointer to the n-th cell in the grid (starting from the lower
+  /// left corner). No boundary check!
+  T* operator[] (size_t n) const;
+
+  /// Returns a pointer to the n-th cell in the grid (starting from the lower
+  /// left corner). No boundary check!
+  T* at(size_t n) const;
+
+  /// Returns a pointer to the n-th cell in the grid (starting from the lower
+  /// left corner). No boundary check!
+  T* getCell(size_t n) const;
+
 
   /// Returns a pointer to the cell at grid coordinates (number of rows
   /// and columns from the lower left corner). No boundary check!
-  T* getRCLocalUnsafe(int16_t r, int16_t c) const;
-
-  /// Returns a pointer to the n-th cell in the grid (starting from the lower
-  /// left corner). No boundary check!
-  /// Internally it computes the corresponding r,c and then calls getRCLocalUnsafe
-  T* operator[] (unsigned n) const;
-
-  /// Returns a pointer to the n-th cell in the grid (starting from the lower
-  /// left corner). No boundary check!
-  /// Internally it computes the corresponding r,c and then calls getRCLocalUnsafe
-  T* at(unsigned n) const;
+  T* getRCLocalUnsafe(int r, int c) const;
 
   /// Returns a pointer to the cell at grid coordinates (number of rows
   /// and columns from the lower left corner), NULL if (r,c)
   /// falls outside of the grid.
-  T* getRCLocal(int16_t r, int16_t c) const;
+  T* getRCLocal(int r, int c) const;
 
-  T* getCell(int n) const;
+  /// Returns a pointer to the cell at global grid coordinates (number of rows
+  /// and columns from the origin of the world coordinates, NULL if (r,c)
+  /// falls outside of the grid.
+  T* getRCGlobal(int r, int c) const;
+
 
   /// Converts XY world coordinates into RCLocal coordinates.
-  template <class CT>
-  void xyToRCLocal(CT x, CT y, int16_t* r, int16_t* c) const;
+  void xyToRCLocal(double x, double y, int* r, int* c) const;
 
   /// Converts RCLocal coordinates into world coordinates XY.
-  template <class CT>
-  void rcLocalToXY(int16_t r, int16_t c, CT* x, CT* y) const;
+  void rcLocalToXY(int r, int c, double* x, double* y) const;
 
   /// Returns the RCLocal coordinates of the cell.
-  void cellToRCLocal(const T* cell, int16_t* r, int16_t* c) const;
+  void cellToRCLocal(const T* cell, int* r, int* c) const;
 
   /// Returns the world coordinates XY of the center of the cell.
-  template <class CT>
-  void cellToXY(const T* cell, CT* x, CT* y) const;
+  void cellToXY(const T* cell, double* x, double* y) const;
+
+
+  /// Returns a pointer to the cell at world coordinates (x,y), NULL if (x,y)
+  /// falls outside of the grid.
+  T* getXY(double x, double y) const;
+
 
   /// Clears the grid by resetting each cell to the default value.
   void clear();
@@ -160,8 +159,7 @@ public:
   /// Recenters the grid so that the new XY coordinates are placed at the center.
   /// Note that no copying or moving is done and this should be associated with
   /// clearing the grid.
-  template <class CT>
-  bool recenter(CT x, CT y);
+  bool recenter(double x, double y);
 
 
 private:
@@ -174,32 +172,38 @@ private:
    * most-negative input we expect will be passed to this function,
    * then doing the cast.
    */
-  static inline int32_t int_floor(double x) __attribute__ ((__const__));
+  static inline int int_floor(double x) __attribute__ ((__const__));
 };
 
 
 template <typename T>
 Grid<T>::Grid()
 : resolution_(0), rows_(0), cols_(0), sz_(0),
-  map_r0_(0), map_c0_(0), cell_(0)
+  x0_(0), y0_(0), cell_(0)
 {
 
 }
 
 template <typename T>
-Grid<T>::Grid(double resolution, int16_t rows, int16_t cols)
-  : resolution_(resolution), rows_(rows), cols_(cols), sz_(rows*cols)
-  , map_r0_(0), map_c0_(0)
+Grid<T>::Grid(double resolution, unsigned rows, unsigned cols)
+  : resolution_(resolution), rows_(rows), cols_(cols)
+  , x0_(0), y0_(0)
 {
+  ROS_ASSERT( rows <= std::numeric_limits<int>::max() );
+  ROS_ASSERT( cols <= std::numeric_limits<int>::max() );
+  sz_ = static_cast<size_t>(rows) * static_cast<size_t>(cols);
   cell_ = new T[sz_];
   clear();
 }
 
 template <typename T>
-Grid<T>::Grid(double resolution, int16_t rows, int16_t cols, const T & default_value)
-  : resolution_(resolution), rows_(rows), cols_(cols), sz_(rows*cols)
-  , map_r0_(0), map_c0_(0)
+Grid<T>::Grid(double resolution, unsigned rows, unsigned cols, const T & default_value)
+  : resolution_(resolution), rows_(rows), cols_(cols)
+  , x0_(0), y0_(0)
 {
+  ROS_ASSERT( rows <= std::numeric_limits<int>::max() );
+  ROS_ASSERT( cols <= std::numeric_limits<int>::max() );
+  sz_ = static_cast<size_t>(rows) * static_cast<size_t>(cols);
   cell_ = new T[sz_];
   default_value_ = default_value;
   clear();
@@ -213,8 +217,8 @@ Grid<T>::Grid(const Grid<T> & other)
   rows_ = other.rows_;
   cols_ = other.cols_;
   sz_ = other.sz_;
-  map_r0_ = other.map_r0_;
-  map_c0_ = other.map_c0_;
+  x0_ = other.x0_;
+  y0_ = other.y0_;
   default_value_ = other.default_value_;
 
   // allocate grid
@@ -240,8 +244,8 @@ Grid<T> & Grid<T>::operator= (const Grid<T> & other)
     rows_ = other.rows_;
     cols_ = other.cols_;
     sz_ = other.sz_;
-    map_r0_ = other.map_r0_;
-    map_c0_ = other.map_c0_;
+    x0_ = other.x0_;
+    y0_ = other.y0_;
     default_value_ = other.default_value_;
 
     // copy grid cells
@@ -252,28 +256,35 @@ Grid<T> & Grid<T>::operator= (const Grid<T> & other)
 }
 
 template <typename T>
-void Grid<T>::setDimensions(double resolution, int16_t rows, int16_t cols)
+void Grid<T>::setDimensions(double resolution, unsigned rows, unsigned cols)
 {
+  ROS_ASSERT( rows <= std::numeric_limits<int>::max() );
+  ROS_ASSERT( cols <= std::numeric_limits<int>::max() );
+
   resolution_ = resolution;
   rows_ = rows;
   cols_ = cols;
-  sz_ = rows*cols;
-  map_r0_ = 0;
-  map_c0_ = 0;
-  if(cell_) delete[] cell_;
+  sz_ = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+  x0_ = 0;
+  y0_ = 0;
+  if(cell_)
+    delete[] cell_;
   cell_ = new T[sz_];
   clear();
 }
 
 template <typename T>
-void Grid<T>::setDimensions(double resolution, int16_t rows, int16_t cols, const T & default_value)
+void Grid<T>::setDimensions(double resolution, unsigned rows, unsigned cols, const T & default_value)
 {
+  ROS_ASSERT( rows <= std::numeric_limits<int>::max() );
+  ROS_ASSERT( cols <= std::numeric_limits<int>::max() );
+
   resolution_ = resolution;
   rows_ = rows;
   cols_ = cols;
-  sz_ = rows*cols;
-  map_r0_ = 0;
-  map_c0_ = 0;
+  sz_ = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+  x0_ = 0;
+  y0_ = 0;
   default_value_ = default_value;
   if(cell_) delete[] cell_;
   cell_ = new T[sz_];
@@ -287,94 +298,81 @@ Grid<T>::~Grid()
 }
 
 template <typename T>
-template <class CT>
-T* Grid<T>::getXY(CT x, CT y) const
+T* Grid<T>::getCell(size_t n) const
 {
-  int16_t c = (int16_t) floor(x / resolution_) - map_c0_;
-  int16_t r = (int16_t) floor(y / resolution_) - map_r0_;
-  if (r < 0 || c < 0 || r >= rows_ || c >= cols_) {return NULL;}
-  return &cell_[r * cols_ + c];
-}
-
-template <typename T>
-T* Grid<T>::getRCGlobal(int16_t r, int16_t c) const
-{
-  r -= map_r0_;
-  c -= map_c0_;
-  if (r < 0 || c < 0 || r >= rows_ || c >= cols_) {return NULL;}
-  return &cell_[r * cols_ + c];
-}
-
-template <typename T>
-T* Grid<T>::getRCLocalUnsafe(int16_t r, int16_t c) const
-{
-  return &cell_[r * cols_ + c];
-}
-
-template <typename T>
-T* Grid<T>::operator[] (unsigned n) const
-{
-  size_t c = n % cols_;
-  size_t r = (n-c) / cols_;
-  return getRCLocalUnsafe(r,c);
-}
-
-template <typename T>
-T* Grid<T>::at(unsigned n) const
-{
-  size_t c = n % cols_;
-  size_t r = (n-c) / cols_;
-  return getRCLocalUnsafe(r,c);
-}
-
-template <typename T>
-T* Grid<T>::getRCLocal(int16_t r, int16_t c) const
-{
-  if (r < 0 || c < 0 || r >= rows_ || c >= cols_) {return NULL;}
-  return &cell_[r * cols_ + c];
-}
-
-template <typename T>
-T* Grid<T>::getCell(int n) const
-{
-  ROS_ASSERT(n>=0 && n<sz_);
   return cell_+n;
 }
 
 template <typename T>
-template <class CT>
-void Grid<T>::xyToRCLocal(CT x, CT y, int16_t* r, int16_t* c) const
+T* Grid<T>::operator[] (size_t n) const
 {
-  *c = int_floor(x / resolution_) - map_c0_;
-  *r = int_floor(y / resolution_) - map_r0_;
+  return getCell(n);
 }
 
 template <typename T>
-template <class CT>
-void Grid<T>::rcLocalToXY(int16_t r, int16_t c, CT* x, CT* y) const
+T* Grid<T>::at(size_t n) const
 {
-  *x = (map_c0_ + c + 0.5) * resolution_;
-  *y = (map_r0_ + r + 0.5) * resolution_;
+  return getCell(n);
 }
 
 template <typename T>
-void Grid<T>::cellToRCLocal(const T* cell, int16_t* r, int16_t* c) const
+T* Grid<T>::getRCLocalUnsafe(int r, int c) const
 {
-  int32_t n = cell - cell_;
+  return getCell(r * cols_ + c);
+}
+
+template <typename T>
+T* Grid<T>::getRCLocal(int r, int c) const
+{
+  if (r < 0 || c < 0 || r >= rows_ || c >= cols_)
+    return NULL;
+  return getRCLocalUnsafe(r, c);
+}
+
+template <typename T>
+void Grid<T>::xyToRCLocal(double x, double y, int* r, int* c) const
+{
+  *c = int_floor( (x-x0_) / resolution_ );
+  *r = int_floor( (y-y0_) / resolution_ );
+}
+
+template <typename T>
+void Grid<T>::rcLocalToXY(int r, int c, double* x, double* y) const
+{
+  *x = c * resolution_ + x0_;
+  *y = r * resolution_ + y0_;
+}
+
+template <typename T>
+void Grid<T>::cellToRCLocal(const T* cell, int* r, int* c) const
+{
+  size_t n = cell - cell_;
   *r = n / cols_;
   *c = n - *r * cols_;
 }
 
 template <typename T>
-template <class CT>
-void Grid<T>::cellToXY(const T* cell, CT* x, CT* y) const
+void Grid<T>::cellToXY(const T* cell, double* x, double* y) const
 {
-  int32_t n = cell - cell_;
-  int16_t r = n / cols_;
-  int16_t c = n - r * cols_;
+  int r, c;
+  cellToRCLocal(cell, &r, &c);
+  rcLocalToXY(r, c, x, y);
+}
 
-  *x = (map_c0_ + c + 0.5) * resolution_;
-  *y = (map_r0_ + r + 0.5) * resolution_;
+template <typename T>
+T* Grid<T>::getXY(double x, double y) const
+{
+  int r, c;
+  xyToRCLocal(x, y, &r, &c);
+  return getRCLocal(r, c);
+}
+
+template <typename T>
+T* Grid<T>::getRCGlobal(int r, int c) const
+{
+  r = int_floor( (r*resolution_ - y0_) / resolution_ );
+  c = int_floor( (c*resolution_ - x0_) / resolution_ );
+  return getRCLocal(r, c);
 }
 
 template <typename T>
@@ -385,18 +383,17 @@ void Grid<T>::clear()
 }
 
 template <typename T>
-template <class CT>
-bool Grid<T>::recenter(CT x, CT y)
+bool Grid<T>::recenter(double x, double y)
 {
-  map_r0_ = int_floor(y / resolution_) - rows_ / 2;
-  map_c0_ = int_floor(x / resolution_) - cols_ / 2;
+  x0_ = x - static_cast<double>(cols_)/2 * resolution_;
+  y0_ = y - static_cast<double>(rows_)/2 * resolution_;
   return true;
 }
 
 template <typename T>
-int32_t Grid<T>::int_floor(double x)
+int Grid<T>::int_floor(double x)
 {
-  return ((int32_t) (x + 100000.0)) - 100000;
+  return ((int) (x + 100000.0)) - 100000;
 }
 
 } //namespace stdr

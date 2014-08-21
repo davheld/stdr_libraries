@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 2.8.3)
 project(stdr_grid)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-find_package(catkin REQUIRED COMPONENTS bag_of_tricks timer)
+find_package(catkin REQUIRED COMPONENTS rosconsole bag_of_tricks timer)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS bag_of_tricks timer
+  CATKIN_DEPENDS rosconsole bag_of_tricks timer
 )
 
 
@@ -20,6 +20,7 @@ add_executable(sanity_check
   include/stdr_grid/grid.h
   include/stdr_grid/rolling_grid.h
 )
+target_link_libraries(sanity_check ${catkin_LIBRARIES})
 
 
 # This does not perform API tests on grid, but simply verify that our custom
@@ -30,6 +31,7 @@ target_link_libraries(test_floor_time ${catkin_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(test_grid src/test_grid.cpp)
+  target_link_libraries(test_grid ${catkin_LIBRARIES})
 endif(CATKIN_ENABLE_TESTING)
 
 install(DIRECTORY include/${PROJECT_NAME}/

@@ -81,6 +81,27 @@ TEST(Grid, SetDimension)
   EXPECT_EQ(0, grid[0]->i);
 }
 
+TEST(Grid, XyRcConversions)
+{
+  Grid<int> grid(1, 100, 100);
+  int r, c;
+  double x, y;
+  grid.recenter(0, 0);
+  grid.rcLocalToXY(0, 0, &x, &y);
+  EXPECT_EQ(-50, x);
+  grid.xyToRCLocal(0, 0, &r, &c);
+  EXPECT_EQ(50, r);
+}
+
+TEST(Grid, Overflow)
+{
+  Grid<int> grid(.001, 10, 10);
+  grid.recenter(1e5, 1e5);
+  double x0, y0;
+  grid.rcLocalToXY(5, 5, &x0, &y0);
+  EXPECT_EQ(1e5, x0);
+}
+
 
 
 TEST(RollingGrid, AllocationBuiltinTypeWithDefault)

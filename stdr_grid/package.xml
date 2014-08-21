@@ -14,8 +14,10 @@
   <author email="brice.rebsamen@gmail.com">Brice Rebsamen</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rosconsole</build_depend>
   <build_depend>bag_of_tricks</build_depend>
   <build_depend>timer</build_depend>
+  <run_depend>rosconsole</run_depend>
   <run_depend>bag_of_tricks</run_depend>
   <run_depend>timer</run_depend>
 </package>
