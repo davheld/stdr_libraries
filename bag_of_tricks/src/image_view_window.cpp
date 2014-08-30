@@ -90,9 +90,10 @@ void ImageViewWindow::pan(int x, int y)
   proposed_roi.x -= (x-mouse_ev_orig_x_) / zoom_;
   proposed_roi.y -= (y-mouse_ev_orig_y_) / zoom_;
 
-  if( full_roi_.contains(proposed_roi.br()) && full_roi_.contains(proposed_roi.tl()))
+  if( full_roi_.contains(proposed_roi.br()) && full_roi_.contains(proposed_roi.tl())) {
     roi_ = proposed_roi;
-  update();
+    update();
+  }
 }
 
 void ImageViewWindow::zoom(int y)
@@ -101,17 +102,30 @@ void ImageViewWindow::zoom(int y)
 
   // dz<0: mouse up: zoom in
   // dz>0: mouse down: zoom out
-  const double proposed_zoom = saved_zoom_ - ((y - mouse_ev_orig_y_) / 100.);
-  if( proposed_zoom>=1 )
+
+  double proposed_zoom = saved_zoom_ - round(((y - mouse_ev_orig_y_) / 100.))/10;
+  if( proposed_zoom<1 )
+    proposed_zoom = 1;
+
+  cv::Rect proposed_roi;
+  const cv::Point center(saved_roi_.x + saved_roi_.width/2, saved_roi_.y + saved_roi_.height/2);
+  proposed_roi.width = full_roi_.width / proposed_zoom;
+  proposed_roi.height = full_roi_.height / proposed_zoom;
+  proposed_roi.x = center.x - proposed_roi.width/2;
+  proposed_roi.y = center.y - proposed_roi.height/2;
+
+  if( proposed_roi.width>50 && proposed_roi.height>50 && proposed_zoom<5 &&
+      full_roi_.contains(proposed_roi.br()) && full_roi_.contains(proposed_roi.tl())) {
+    roi_ = proposed_roi;
     zoom_ = proposed_zoom;
-  std::cout <<zoom_ <<std::endl;
-  update();
+    update();
+  }
 }
 
 void ImageViewWindow::update()
 {
   if( ! source_img_.empty() )
-    cv::resize(source_img_(roi_), disp_img_, cv::Size(), zoom_, zoom_);
+    cv::resize(source_img_(roi_), disp_img_, cv::Size(), zoom_, zoom_, cv::INTER_NEAREST);
 }
 
 void ImageViewWindow::onMouseStatic(int event, int x, int y, int flags, void *param)
