@@ -4,7 +4,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 
 find_package(catkin REQUIRED COMPONENTS roscpp serializable timer)
-find_package(OpenCV REQUIRED COMPONENTS core)
+find_package(OpenCV REQUIRED COMPONENTS core highgui)
 find_package(Boost REQUIRED COMPONENTS thread)
 
 catkin_package(
@@ -21,8 +21,10 @@ add_library(${PROJECT_NAME}
   include/bag_of_tricks/connected_components.h
   include/bag_of_tricks/glob.h
   include/bag_of_tricks/image_region_iterator.h
+  include/bag_of_tricks/image_view_window.h
   include/bag_of_tricks/next_path.h
   src/image_region_iterator.cpp
+  src/image_view_window.cpp
   src/connected_components.cpp
   src/next_path.cpp
 )
