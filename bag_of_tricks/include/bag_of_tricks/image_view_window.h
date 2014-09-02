@@ -109,11 +109,10 @@ private:
 
   const std::string win_name_;
   cv::Rect roi_, saved_roi_, full_roi_;
-  double zoom_, saved_zoom_;
 
   enum PanZoomMode { PZM_NONE, PZM_PAN, PZM_ZOOM };
   PanZoomMode pan_zoom_mode_;
-  int mouse_ev_orig_x_, mouse_ev_orig_y_;
+  cv::Point mouse_ev_orig_;
 
   cv::Mat source_img_, disp_img_;
   boost::recursive_mutex mutex_;

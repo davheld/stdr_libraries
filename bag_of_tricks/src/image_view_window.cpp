@@ -76,7 +76,6 @@ void ImageViewWindow::resetView()
   if( source_img_.empty() )
     return;
   roi_ = full_roi_;
-  zoom_ = 1;
   cv::resizeWindow(win_name_, source_img_.cols / 4, source_img_.rows / 4);
   update();
 }
@@ -87,23 +86,57 @@ void ImageViewWindow::pan(int x, int y)
   if( source_img_.empty() )
     return;
   cv::Rect proposed_roi = saved_roi_;
-  proposed_roi.x -= (x-mouse_ev_orig_x_) / zoom_;
-  proposed_roi.y -= (y-mouse_ev_orig_y_) / zoom_;
+  const int dx = x-mouse_ev_orig_.x, dy = y-mouse_ev_orig_.y;
 
-  if( full_roi_.contains(proposed_roi.br()) && full_roi_.contains(proposed_roi.tl())) {
-    roi_ = proposed_roi;
-    update();
+  proposed_roi.x -= dx;
+  proposed_roi.y -= dy;
+
+  if( proposed_roi.x < 0 ) {
+    proposed_roi.x = 0;
+    mouse_ev_orig_.x = x;
+    saved_roi_.x = 0;
   }
+  if( proposed_roi.y < 0 ) {
+    proposed_roi.y = 0;
+    mouse_ev_orig_.y = y;
+    saved_roi_.y = 0;
+  }
+  if( proposed_roi.x + proposed_roi.width > full_roi_.width ) {
+    proposed_roi.x = full_roi_.width - proposed_roi.width;
+    mouse_ev_orig_.x = x;
+    saved_roi_.x = full_roi_.width - proposed_roi.width;
+  }
+  if( proposed_roi.y + proposed_roi.height > full_roi_.height ) {
+    proposed_roi.y = full_roi_.height - proposed_roi.height;
+    mouse_ev_orig_.y = y;
+    saved_roi_.y = full_roi_.height - proposed_roi.height;
+  }
+
+  roi_ = proposed_roi & full_roi_;
+
+  update();
 }
 
 void ImageViewWindow::zoom(int y)
 {
   boost::lock_guard<boost::recursive_mutex> guard(mutex_);
 
-  // dz<0: mouse up: zoom in
-  // dz>0: mouse down: zoom out
+  const int dy = y - mouse_ev_orig_.y;
+  // dy<0: mouse up: zoom in
+  // dy>0: mouse down: zoom out
 
-  double proposed_zoom = saved_zoom_ - round(((y - mouse_ev_orig_y_) / 100.))/10;
+  const double zoom = static_cast<double>(full_roi_.width)
+      / static_cast<double>(saved_roi_.width);
+  const double zoom_f = 1 - static_cast<double>(dy)/1000;
+
+  double proposed_zoom = zoom * zoom_f;
+
+  /*
+  std::cout <<"y=" <<y <<", orig=" <<mouse_ev_orig_.y <<", dy=" <<dy
+           <<", saved width=" <<saved_roi_.width <<", zoom=" <<zoom
+          <<", zoom_f=" <<zoom_f <<", proposed_zoom=" <<proposed_zoom <<std::endl;
+  */
+
   if( proposed_zoom<1 )
     proposed_zoom = 1;
 
@@ -117,15 +150,15 @@ void ImageViewWindow::zoom(int y)
   if( proposed_roi.width>50 && proposed_roi.height>50 && proposed_zoom<5 &&
       full_roi_.contains(proposed_roi.br()) && full_roi_.contains(proposed_roi.tl())) {
     roi_ = proposed_roi;
-    zoom_ = proposed_zoom;
     update();
   }
 }
 
 void ImageViewWindow::update()
 {
-  if( ! source_img_.empty() )
-    cv::resize(source_img_(roi_), disp_img_, cv::Size(), zoom_, zoom_, cv::INTER_NEAREST);
+  if( source_img_.empty() )
+    return;
+  disp_img_ = source_img_(roi_);
 }
 
 void ImageViewWindow::onMouseStatic(int event, int x, int y, int flags, void *param)
@@ -137,11 +170,9 @@ void ImageViewWindow::onMouseStatic(int event, int x, int y, int flags, void *pa
 void ImageViewWindow::onMouse(int event, int x, int y, int flags)
 {
   if( event==CV_EVENT_LBUTTONDOWN || event==CV_EVENT_RBUTTONDOWN ) {
-    mouse_ev_orig_x_ = x;
-    mouse_ev_orig_y_ = y;
+    mouse_ev_orig_ = cv::Point(x,y);
     pan_zoom_mode_ = event==CV_EVENT_LBUTTONDOWN ? PZM_PAN : PZM_ZOOM;
     saved_roi_ = roi_;
-    saved_zoom_ = zoom_;
   }
   if( event==CV_EVENT_LBUTTONUP || event==CV_EVENT_RBUTTONUP )
     pan_zoom_mode_ = PZM_NONE;
