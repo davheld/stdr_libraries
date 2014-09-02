@@ -154,6 +154,12 @@ void ImageViewWindow::zoom(int y)
   }
 }
 
+cv::Point ImageViewWindow::winToImgCoords(int x, int y) const
+{
+  boost::lock_guard<boost::recursive_mutex> guard(mutex_);
+  return cv::Point(x+roi_.x, y+roi_.y);
+}
+
 void ImageViewWindow::update()
 {
   if( source_img_.empty() )

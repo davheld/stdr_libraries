@@ -68,6 +68,10 @@ public:
   /// @return the result of waitKey
   char spin();
 
+  /// computes the coordinates in the full image's frame, given coordinates
+  /// in the displayed image's frame.
+  cv::Point winToImgCoords(int x, int y) const;
+
 protected:
   virtual void onMouse(int event, int x, int y, int flags);
 
@@ -115,7 +119,7 @@ private:
   cv::Point mouse_ev_orig_;
 
   cv::Mat source_img_, disp_img_;
-  boost::recursive_mutex mutex_;
+  mutable boost::recursive_mutex mutex_;
 };
 
 
