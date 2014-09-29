@@ -16,10 +16,12 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}
   include/stdr_lib/exception.h
+  include/stdr_lib/heat_map.h
   include/stdr_lib/roslib_helpers.h
   include/stdr_lib/unit_conversions.h
   include/stdr_lib/rosparam_helpers.h
 
+  src/heat_map.cpp
   src/roslib_helpers.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
