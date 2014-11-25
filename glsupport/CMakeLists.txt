@@ -3,6 +3,7 @@ project(glsupport)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 find_package(catkin REQUIRED COMPONENTS angles stdr_lib)
+find_package(cmake_modules REQUIRED)
 
 find_package(OpenCV REQUIRED COMPONENTS core highgui)
 find_package(Eigen REQUIRED)

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(eigen_extensions)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
+find_package(cmake_modules REQUIRED)
 find_package(catkin REQUIRED COMPONENTS bag_of_tricks)
 find_package(Boost REQUIRED COMPONENTS system filesystem iostreams)
 find_package(Eigen REQUIRED)

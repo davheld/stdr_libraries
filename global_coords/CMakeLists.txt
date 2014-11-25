@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(global_coords)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
+find_package(cmake_modules REQUIRED)
 find_package(catkin REQUIRED COMPONENTS roscpp angles)
 find_package(Eigen REQUIRED)
 
