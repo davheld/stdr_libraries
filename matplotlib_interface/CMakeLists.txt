@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(matplotlib_interface)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-find_package(cmake_modules REQUIRED)
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS cmake_modules)
 find_package(Eigen REQUIRED)
 find_package(PythonLibs REQUIRED)
 
@@ -11,7 +10,6 @@ find_package(PythonLibs REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS
   DEPENDS EIGEN PYTHON
 )
 
