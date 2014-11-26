@@ -5,6 +5,10 @@ using namespace Eigen;
 
 void mpliExecuteFile(const string& filename) {
   FILE *fp = fopen(filename.c_str(), "r");
+  if( !fp ) {
+    cerr <<"ERROR: could not open " <<filename <<endl;
+    return;
+  }
   PyRun_SimpleFile(fp, filename.c_str());
   fclose(fp);
 }
