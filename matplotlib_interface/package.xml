@@ -21,4 +21,6 @@
 
   <run_depend>python-matplotlib</run_depend>
   <run_depend>eigen</run_depend>
+  <run_depend>texlive-latex-base</run_depend>
+  <run_depend>texlive-fonts-recommended</run_depend>
 </package>
