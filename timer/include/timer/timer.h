@@ -44,6 +44,7 @@
 #include <sstream>
 #include <cstddef>
 #include <iostream>
+#include <cstdio>
 
 /// /brief Time units to control reporting
 struct TimeUnit
@@ -83,7 +84,12 @@ public:
   std::string reportSeconds() const;
   std::string reportMinutes() const;
   std::string reportHours() const;
-  
+
+  void print() const {std::string msString = report(); printf("[TIMER] %s\n", msString.c_str());}
+  void printSeconds() const {std::string msString = reportSeconds(); printf("[TIMER] %s\n", msString.c_str());}
+  void printMilliseconds() const {std::string msString = reportMilliseconds(); printf("[TIMER] %s\n", msString.c_str());}
+  void printMicroseconds() const {std::string msString = reportMicroseconds(); printf("[TIMER] %s\n", msString.c_str());}
+
 private:
   double total_us_;
   timespec start_;

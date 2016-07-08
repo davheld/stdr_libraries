@@ -82,7 +82,7 @@ public:
   inline unsigned size() const { return rgbs_.size(); }
 
   /// Returns the n-th color (modulo the number of colors)
-  inline const RGB& operator[] (unsigned n) const { return rgbs_[n%rgbs_.size()]; }
+  const RGB& operator[] (unsigned n) const;
 
 private:
   std::vector<RGB> rgbs_;

@@ -129,4 +129,18 @@ ColorWheel::ColorWheel(unsigned n)
   std::random_shuffle(rgbs_.begin(), rgbs_.end());
 }
 
+//          0       1     2         3             4         5            6               7        8       9
+// Colors: green, cyan, yellow, light orange, dark orange,  green?      light blue            green     cyan
+/// Returns the n-th color (modulo the number of colors)
+const ColorWheel::RGB& ColorWheel::operator[] (unsigned n) const {
+  int color = n % rgbs_.size();
+  if (n == 178 || n == 168 || n == 51) {
+    color = 3; // orange
+  } else if (n == 132) {
+    color = 2; // yellow
+  }
+
+  return rgbs_[color];
+}
+
 } // namespace stdr
